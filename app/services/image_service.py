@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image
 from fastapi import UploadFile, HTTPException
+from uuid import uuid4
 
 from app.config import settings
 from app.models.image.base import clamp01
@@ -97,7 +98,8 @@ class ImageDetectionService:
             return False, f"File too large. Max size: {settings.MAX_UPLOAD_SIZE / (1024*1024)}MB", None
         
         # Save temporarily for processing
-        temp_path = os.path.join(settings.UPLOAD_DIR, f"temp_{file.filename}")
+        filename = uuid4().hex
+        temp_path = os.path.join(settings.UPLOAD_DIR, f"temp_{filename}")
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
         
         try:
