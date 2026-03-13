@@ -1,0 +1,12 @@
+# scripts/download_models.py
+from transformers import pipeline
+import torch
+
+print("Downloading text model...")
+text_detector = pipeline("text-classification", model="openai-community/roberta-base-openai-detector")
+
+print("Downloading image model...")
+image_detector = pipeline("image-classification", model="Organika/sdxl-detector")
+# image_detector("https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/hub/parrots.png")
+
+print("All models downloaded and cached!")
