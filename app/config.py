@@ -30,9 +30,9 @@ class Settings(BaseSettings):
     # You can override via env, e.g.
     # IMAGE_MODELS='["deepfake_v1","sdxl"]'
     # IMAGE_MODEL_WEIGHTS='{"deepfake_v1":0.7,"sdxl":0.3}'
-    IMAGE_MODELS: List[str] = ["deepfake_v1"]
-    IMAGE_MODEL_WEIGHTS: Dict[str, float] = {"deepfake_v1": 1.0}
-    RETURN_PER_MODEL: bool = False
+    IMAGE_MODELS: List[str] = ["deepfake_v1", "sdxl"]
+    IMAGE_MODEL_WEIGHTS: Dict[str, float] = {"deepfake_v1": 0.5, "sdxl": 0.5}
+    RETURN_PER_MODEL: bool = True
 
     class Config:
         env_file = ".env"
