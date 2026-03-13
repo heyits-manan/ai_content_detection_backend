@@ -65,7 +65,6 @@ class ImageDetectionService:
     def __init__(self):
         """Initialize the service and load the detector"""
         self.detectors = None
-        self._load_detectors()
     
     def _load_detectors(self):
         """Lazy-load detectors. Uses a process-level cache under the hood."""
@@ -135,7 +134,7 @@ class ImageDetectionService:
         """
         try:
             # Load image
-            image = Image.open(file_path)
+            image = Image.open(file_path).convert("RGB")
             
             # Ensure detectors are loaded
             self._load_detectors()

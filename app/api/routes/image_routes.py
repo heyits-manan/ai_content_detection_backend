@@ -97,8 +97,6 @@ async def health_check(service: ImageDetectionService = Depends(get_image_servic
     Check if image detection service is operational
     """
     try:
-        # Try to access detectors (will load if not loaded)
-        _ = service.detectors
         return {
             "status": "healthy",
             "service": "image-detection",
