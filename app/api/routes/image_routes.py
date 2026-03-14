@@ -4,13 +4,13 @@ Endpoints for AI image detection
 """
 
 from typing import List
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 
 from app.services.image_service import ImageDetectionService
 from app.config import settings
 from app.api.models.response_models import DetectionResponse, BatchDetectionResponse, HealthResponse
 from functools import lru_cache
+from app.core.rate_limit import limiter
 
 # Create router
 router = APIRouter()
@@ -25,7 +25,9 @@ async def get_image_service():
     return _get_image_service_singleton()
 
 @router.post("/detect", response_model=DetectionResponse)
+@limiter.limit(settings.IMAGE_DETECT_RATE_LIMIT)
 async def detect_image(
+    request: Request,
     file: UploadFile = File(..., description="Image file to analyze (jpg, png, webp)"),
     service: ImageDetectionService = Depends(get_image_service)
 ):
@@ -56,7 +58,9 @@ async def detect_image(
         )
 
 @router.post("/detect-batch", response_model=BatchDetectionResponse)
+@limiter.limit(settings.IMAGE_BATCH_RATE_LIMIT)
 async def detect_images_batch(
+    request: Request,
     files: List[UploadFile] = File(..., description="Multiple image files"),
     service: ImageDetectionService = Depends(get_image_service)
 ):
@@ -92,7 +96,8 @@ async def detect_images_batch(
         )
 
 @router.get("/health", response_model=HealthResponse)
-async def health_check(service: ImageDetectionService = Depends(get_image_service)):
+@limiter.limit(settings.IMAGE_HEALTH_RATE_LIMIT)
+async def health_check(request: Request, service: ImageDetectionService = Depends(get_image_service)):
     """
     Check if image detection service is operational
     """

@@ -37,6 +37,10 @@ class Settings(BaseSettings):
         "umm_maybe": 1.0,
     }
     RETURN_PER_MODEL: bool = True
+    DEFAULT_RATE_LIMIT: str = "30/minute"
+    IMAGE_DETECT_RATE_LIMIT: str = "10/minute"
+    IMAGE_BATCH_RATE_LIMIT: str = "3/minute"
+    IMAGE_HEALTH_RATE_LIMIT: str = "60/minute"
 
     class Config:
         env_file = ".env"

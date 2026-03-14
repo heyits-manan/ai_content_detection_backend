@@ -58,6 +58,7 @@ scipy==1.17.1
 setuptools==82.0.1
 shellingham==1.5.4
 soundfile==0.13.1
+slowapi==0.1.9
 soxr==1.0.0
 standard-aifc==3.13.0
 standard-chunk==3.13.0
