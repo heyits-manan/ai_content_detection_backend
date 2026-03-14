@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Tuple
 from PIL import Image
 
 from app.models.image.base import normalize_detector_result
+from app.models.hf_loader import load_image_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +37,8 @@ class DeepfakeDetectorV1:
         self._load_model()
 
     def _load_model(self) -> None:
-        # Lazy import so app can start even if transformers isn't present
         try:
-            from transformers import pipeline  # type: ignore
+            self._pipe = load_image_pipeline(self.model_name, device=self.device)
         except Exception as e:
             raise RuntimeError(
                 "transformers is required for DeepfakeDetectorV1. "
@@ -47,10 +47,6 @@ class DeepfakeDetectorV1:
 
         logger.info(f"Loading DeepfakeDetectorV1 ({self.model_name})...")
         start = time.time()
-        kwargs: Dict[str, Any] = {"model": self.model_name}
-        if self.device is not None:
-            kwargs["device"] = self.device
-        self._pipe = pipeline("image-classification", **kwargs)
         logger.info(f"✅ DeepfakeDetectorV1 loaded in {(time.time() - start):.2f}s")
 
     def _parse(self, results: list[dict]) -> Tuple[float, float]:
@@ -124,4 +120,3 @@ class DeepfakeDetectorV1:
         except Exception as e:
             logger.error(f"DeepfakeDetectorV1 prediction failed: {e}")
             return {"success": False, "error": str(e), "detector": self.name, "model_used": self.model_name}
-

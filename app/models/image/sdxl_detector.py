@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional
 import torch
 
 from app.models.image.base import normalize_detector_result
+from app.models.hf_loader import load_image_pipeline
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -56,21 +57,13 @@ class SDXLDetector:
     
     def load_model(self):
         """
-        Load the SDXL detector model from Hugging Face
-        This will download on first run, then cache locally
+        Load the SDXL detector model from the local Hugging Face cache.
         """
         try:
-            # Lazy import so app can start even if transformers isn't present
-            from transformers import pipeline  # type: ignore
-
             logger.info(f"Loading SDXL detector on {self.device}...")
             start_time = time.time()
             
-            self.model = pipeline(
-                "image-classification",
-                model=self.model_name,
-                device=self.device
-            )
+            self.model = load_image_pipeline(self.model_name, device=self.device)
             
             load_time = time.time() - start_time
             logger.info(f"✅ SDXL detector loaded in {load_time:.2f} seconds")

@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Tuple
 from PIL import Image
 
 from app.models.image.base import normalize_detector_result
+from app.models.hf_loader import load_image_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +32,15 @@ class UMMMaybeDetector:
 
     def _load_model(self) -> None:
         try:
-            from transformers import pipeline  # type: ignore
+            logger.info(f"Loading UMMMaybeDetector ({self.model_name})...")
+            start = time.time()
+            self._pipe = load_image_pipeline(self.model_name, device=self.device)
+            logger.info(f"✅ UMMMaybeDetector loaded in {(time.time() - start):.2f}s")
         except Exception as e:
             raise RuntimeError(
                 "transformers is required for UMMMaybeDetector. "
                 "Install it in the same environment that runs uvicorn."
             ) from e
-
-        logger.info(f"Loading UMMMaybeDetector ({self.model_name})...")
-        start = time.time()
-        kwargs: Dict[str, Any] = {"model": self.model_name}
-        if self.device is not None:
-            kwargs["device"] = self.device
-        self._pipe = pipeline("image-classification", **kwargs)
-        logger.info(f"✅ UMMMaybeDetector loaded in {(time.time() - start):.2f}s")
 
     def _parse(self, results: list[dict]) -> Tuple[float, float]:
         ai_keywords = ("ai", "generated", "synthetic", "fake", "artificial", "label_1")

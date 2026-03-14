@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     
     # Model paths (adjust as needed)
     MODEL_CACHE_DIR: str = "./models/cache"
+    HF_HOME: str = "/opt/huggingface"
+    HF_LOCAL_FILES_ONLY: bool = False
     
     # File upload settings
     MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024  # 100MB
@@ -41,6 +43,13 @@ class Settings(BaseSettings):
     IMAGE_DETECT_RATE_LIMIT: str = "10/minute"
     IMAGE_BATCH_RATE_LIMIT: str = "3/minute"
     IMAGE_HEALTH_RATE_LIMIT: str = "60/minute"
+    TEXT_MODELS: List[str] = ["openai_roberta", "hello_simpleai_roberta"]
+    TEXT_MODEL_WEIGHTS: Dict[str, float] = {
+        "openai_roberta": 1.0,
+        "hello_simpleai_roberta": 1.0,
+    }
+    TEXT_DETECT_RATE_LIMIT: str = "20/minute"
+    TEXT_HEALTH_RATE_LIMIT: str = "60/minute"
 
     class Config:
         env_file = ".env"

@@ -50,3 +50,38 @@ class HealthResponse(BaseModel):
     models: Optional[List[str]] = None
     ensemble: Optional[EnsembleInfo] = None
     error: Optional[str] = None
+
+
+class TextPerModelResult(BaseModel):
+    success: bool
+    detector: Optional[str] = None
+    model_used: Optional[str] = None
+    ai_probability: Optional[float] = None
+    human_probability: Optional[float] = None
+    confidence: Optional[float] = None
+    inference_time_ms: Optional[float] = None
+    error: Optional[str] = None
+    raw_results: Optional[Any] = None
+
+    model_config = ConfigDict(extra='allow')
+
+
+class TextDetectionData(BaseModel):
+    success: bool
+    ai_probability: Optional[float] = None
+    human_probability: Optional[float] = None
+    weighted_ai_probability: Optional[float] = None
+    average_ai_probability: Optional[float] = None
+    average_human_probability: Optional[float] = None
+    is_ai_generated: Optional[bool] = None
+    confidence: Optional[float] = None
+    models_used: Optional[List[str]] = None
+    text_length: int
+    error: Optional[str] = None
+    per_model: Optional[List[TextPerModelResult]] = None
+
+
+class TextDetectionResponse(BaseModel):
+    success: bool
+    data: Optional[TextDetectionData] = None
+    error: Optional[str] = None
