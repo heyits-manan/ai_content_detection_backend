@@ -57,6 +57,16 @@ def combine_ai_probabilities(
     return clamp01(ai), per_model
 
 
+def average_ai_probabilities(per_model: List[Dict[str, Any]]) -> Tuple[float, float]:
+    successes = [r for r in per_model if r.get("success") is True]
+    if not successes:
+        return 0.0, 1.0
+
+    avg_ai = sum(float(r.get("ai_probability", 0.0)) for r in successes) / len(successes)
+    avg_real = sum(float(r.get("real_probability", 0.0)) for r in successes) / len(successes)
+    return clamp01(avg_ai), clamp01(avg_real)
+
+
 class ImageDetectionService:
     """
     Service for detecting AI-generated images
@@ -154,26 +164,19 @@ class ImageDetectionService:
                         }
                     )
 
-            # Combine (weighted mean; defaults to equal weights)
-            ai_p, per_model = combine_ai_probabilities(per_model, settings.IMAGE_MODEL_WEIGHTS)
-            
-            # Calculate flat average just in case weights are unbalanced
             successful_models = [r for r in per_model if r.get("success") is True]
-            if successful_models:
-                avg_ai = sum(float(r.get("ai_probability", 0.0)) for r in successful_models) / len(successful_models)
-                avg_real = sum(float(r.get("real_probability", 0.0)) for r in successful_models) / len(successful_models)
-            else:
-                avg_ai = ai_p
-                avg_real = 1.0 - ai_p
+            weighted_ai, per_model = combine_ai_probabilities(per_model, settings.IMAGE_MODEL_WEIGHTS)
+            avg_ai, avg_real = average_ai_probabilities(per_model)
                 
             out: Dict[str, Any] = {
                 "success": True,
-                "ai_probability": ai_p,
-                "real_probability": float(1.0 - ai_p),
+                "ai_probability": avg_ai,
+                "real_probability": avg_real,
                 "average_ai_probability": avg_ai,
                 "average_real_probability": avg_real,
                 "is_ai_generated": avg_ai > 0.5,
-                "confidence": float(max(ai_p, 1.0 - ai_p)),
+                "confidence": float(max(avg_ai, avg_real)),
+                "weighted_ai_probability": weighted_ai,
                 "models_used": [r.get("detector") for r in successful_models],
                 "filename": os.path.basename(file_path),
             }

@@ -28,10 +28,14 @@ class Settings(BaseSettings):
 
     # Image model selection / ensemble
     # You can override via env, e.g.
-    # IMAGE_MODELS='["deepfake_v1","sdxl"]'
-    # IMAGE_MODEL_WEIGHTS='{"deepfake_v1":0.7,"sdxl":0.3}'
-    IMAGE_MODELS: List[str] = ["deepfake_v1", "sdxl"]
-    IMAGE_MODEL_WEIGHTS: Dict[str, float] = {"deepfake_v1": 0.5, "sdxl": 0.5}
+    # IMAGE_MODELS='["deepfake_v1","sdxl","umm_maybe"]'
+    # IMAGE_MODEL_WEIGHTS='{"deepfake_v1":1.0,"sdxl":1.0,"umm_maybe":1.0}'
+    IMAGE_MODELS: List[str] = ["deepfake_v1", "sdxl", "umm_maybe"]
+    IMAGE_MODEL_WEIGHTS: Dict[str, float] = {
+        "deepfake_v1": 1.0,
+        "sdxl": 1.0,
+        "umm_maybe": 1.0,
+    }
     RETURN_PER_MODEL: bool = True
 
     class Config:

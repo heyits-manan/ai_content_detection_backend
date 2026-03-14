@@ -18,6 +18,7 @@ class DetectionData(BaseModel):
     success: bool
     ai_probability: Optional[float] = None
     real_probability: Optional[float] = None
+    weighted_ai_probability: Optional[float] = None
     average_ai_probability: Optional[float] = None
     average_real_probability: Optional[float] = None
     is_ai_generated: Optional[bool] = None

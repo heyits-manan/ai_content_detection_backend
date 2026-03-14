@@ -102,7 +102,7 @@ async def health_check(service: ImageDetectionService = Depends(get_image_servic
             "service": "image-detection",
             "models": settings.IMAGE_MODELS,
             "ensemble": {
-                "combiner": "weighted_mean",
+                "combiner": "mean_of_successful_models",
                 "weights": settings.IMAGE_MODEL_WEIGHTS,
                 "return_per_model": settings.RETURN_PER_MODEL,
             },
