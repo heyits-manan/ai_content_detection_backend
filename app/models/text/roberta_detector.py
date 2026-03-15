@@ -31,16 +31,10 @@ class BaseRobertaTextDetector:
         self._load_model()
 
     def _load_model(self) -> None:
-        try:
-            logger.info(f"Loading {self.name} ({self.model_name})...")
-            start = time.time()
-            self._pipe = load_text_pipeline(self.model_name, device=self.device)
-            logger.info(f"Loaded {self.name} in {(time.time() - start):.2f}s")
-        except Exception as e:
-            raise RuntimeError(
-                f"transformers is required for {self.__class__.__name__}. "
-                "Install it in the same environment that runs uvicorn."
-            ) from e
+        logger.info(f"Loading {self.name} ({self.model_name})...")
+        start = time.time()
+        self._pipe = load_text_pipeline(self.model_name, device=self.device)
+        logger.info(f"Loaded {self.name} in {(time.time() - start):.2f}s")
 
     def _parse(self, results: list[dict]) -> Tuple[float, float]:
         ai_keywords = ("fake", "ai", "generated", "machine", "label_1")

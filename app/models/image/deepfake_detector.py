@@ -37,16 +37,9 @@ class DeepfakeDetectorV1:
         self._load_model()
 
     def _load_model(self) -> None:
-        try:
-            self._pipe = load_image_pipeline(self.model_name, device=self.device)
-        except Exception as e:
-            raise RuntimeError(
-                "transformers is required for DeepfakeDetectorV1. "
-                "Install it in the same environment that runs uvicorn."
-            ) from e
-
         logger.info(f"Loading DeepfakeDetectorV1 ({self.model_name})...")
         start = time.time()
+        self._pipe = load_image_pipeline(self.model_name, device=self.device)
         logger.info(f"✅ DeepfakeDetectorV1 loaded in {(time.time() - start):.2f}s")
 
     def _parse(self, results: list[dict]) -> Tuple[float, float]:

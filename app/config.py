@@ -8,15 +8,16 @@ class Settings(BaseSettings):
     
     # CORS
     ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
+        # "http://localhost:3000",
+        # "http://127.0.0.1:3000",
+        # "http://localhost:3001",
+        # "http://127.0.0.1:3001",
+        "*"
     ]
     
     # Model paths (adjust as needed)
     MODEL_CACHE_DIR: str = "./models/cache"
-    HF_HOME: str = "/opt/huggingface"
+    HF_HOME: str = "./.hf-cache"
     HF_LOCAL_FILES_ONLY: bool = False
     
     # File upload settings

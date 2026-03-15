@@ -31,16 +31,10 @@ class UMMMaybeDetector:
         self._load_model()
 
     def _load_model(self) -> None:
-        try:
-            logger.info(f"Loading UMMMaybeDetector ({self.model_name})...")
-            start = time.time()
-            self._pipe = load_image_pipeline(self.model_name, device=self.device)
-            logger.info(f"✅ UMMMaybeDetector loaded in {(time.time() - start):.2f}s")
-        except Exception as e:
-            raise RuntimeError(
-                "transformers is required for UMMMaybeDetector. "
-                "Install it in the same environment that runs uvicorn."
-            ) from e
+        logger.info(f"Loading UMMMaybeDetector ({self.model_name})...")
+        start = time.time()
+        self._pipe = load_image_pipeline(self.model_name, device=self.device)
+        logger.info(f"✅ UMMMaybeDetector loaded in {(time.time() - start):.2f}s")
 
     def _parse(self, results: list[dict]) -> Tuple[float, float]:
         ai_keywords = ("ai", "generated", "synthetic", "fake", "artificial", "label_1")
