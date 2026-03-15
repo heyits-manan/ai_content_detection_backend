@@ -38,30 +38,32 @@ Text models:
 
 ## Local Setup
 
-### 1. Clone and enter the backend
+Choose the setup path that matches the client machine.
+
+### macOS
+
+#### 1. Clone and enter the backend
 
 ```bash
 git clone <your-repo-url>
 cd ai-content-detection/backend
 ```
 
-### 2. Create a virtual environment
+#### 2. Create and activate a virtual environment
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Install dependencies
+#### 3. Install dependencies
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 4. Download the models
-
-Before starting the server, download all configured image and text models into the local Hugging Face cache:
+#### 4. Download all models once
 
 ```bash
 ./venv/bin/python scripts/download_models.py
@@ -74,23 +76,59 @@ This downloads:
 - `openai-community/roberta-base-openai-detector`
 - `Hello-SimpleAI/chatgpt-detector-roberta`
 
-### 5. Run the backend
+#### 5. Start the backend
 
 ```bash
 ./venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Local behavior:
-- models are cached under `./.hf-cache`
-- runtime loads models from the local cache only
-- `/health` does not load models
-- model-loading happens lazily on the first request that needs them
-
-### 6. Open the API
+#### 6. Open the API
 
 - Root: `http://localhost:8000/`
 - App health: `http://localhost:8000/health`
 - Swagger UI: `http://localhost:8000/docs`
+
+### Windows
+
+Windows users have two practical options:
+- `WSL2` with Ubuntu: recommended if they want a local Python setup similar to macOS/Linux
+- `Docker Desktop`: recommended if they want the most reliable setup with the fewest Python package issues
+
+#### Option A: Windows with WSL2
+
+Inside the WSL Ubuntu shell:
+
+```bash
+git clone <your-repo-url>
+cd ai-content-detection/backend
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+./venv/bin/python scripts/download_models.py
+./venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+#### Option B: Windows with Docker Desktop
+
+From the backend folder:
+
+```bash
+docker build -t ai-content-backend .
+docker run -p 8000:8000 ai-content-backend
+```
+
+Then open:
+- Root: `http://localhost:8000/`
+- App health: `http://localhost:8000/health`
+- Swagger UI: `http://localhost:8000/docs`
+
+### Local Runtime Behavior
+
+- models are cached under `./.hf-cache` for non-Docker local runs
+- runtime loads models from the local cache only
+- `/health` does not load models
+- model-loading happens lazily on the first request that needs them
 
 ## Local Model Cache
 
