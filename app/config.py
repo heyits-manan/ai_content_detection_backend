@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # Model paths (adjust as needed)
     MODEL_CACHE_DIR: str = "./models/cache"
     HF_HOME: str = "./.hf-cache"
-    HF_LOCAL_FILES_ONLY: bool = False
+    HF_LOCAL_FILES_ONLY: bool = True
     
     # File upload settings
     MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024  # 100MB

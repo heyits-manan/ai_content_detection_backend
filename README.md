@@ -34,7 +34,7 @@ Text models:
 
 - Python 3.13
 - A virtual environment
-- Internet access on first local model load, unless you pre-cache models yourself
+- Internet access before first run to download the required models
 
 ## Local Setup
 
@@ -59,7 +59,22 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 4. Run the backend
+### 4. Download the models
+
+Before starting the server, download all configured image and text models into the local Hugging Face cache:
+
+```bash
+./venv/bin/python scripts/download_models.py
+```
+
+This downloads:
+- `Organika/sdxl-detector`
+- `prithivMLmods/deepfake-detector-model-v1`
+- `umm-maybe/AI-image-detector`
+- `openai-community/roberta-base-openai-detector`
+- `Hello-SimpleAI/chatgpt-detector-roberta`
+
+### 5. Run the backend
 
 ```bash
 ./venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -67,11 +82,11 @@ pip install -r requirements.txt
 
 Local behavior:
 - models are cached under `./.hf-cache`
-- missing models are downloaded automatically on first use
+- runtime loads models from the local cache only
 - `/health` does not load models
 - model-loading happens lazily on the first request that needs them
 
-### 5. Open the API
+### 6. Open the API
 
 - Root: `http://localhost:8000/`
 - App health: `http://localhost:8000/health`
@@ -83,19 +98,15 @@ By default, local runs use:
 
 ```env
 HF_HOME=./.hf-cache
-HF_LOCAL_FILES_ONLY=false
+HF_LOCAL_FILES_ONLY=true
 ```
 
 This means:
-- local development can download models on demand
+- local development expects the models to already exist in `./.hf-cache`
 - the downloaded files stay in `./.hf-cache`
 - you should not commit that folder
 
-If you want to pre-download models locally:
-
-```bash
-./venv/bin/python scripts/download_models.py
-```
+If a model is missing, the backend will fail with a cache-related error instead of downloading it during a request.
 
 ## Environment Variables
 
@@ -197,11 +208,13 @@ Why:
 
 ### Models are downloading locally on first request
 
-This is expected for local development unless you pre-cache them.
+That should not happen in the current setup. If it does, check whether `HF_LOCAL_FILES_ONLY` was overridden.
 
 ### Local run fails with cache or permission errors
 
-Make sure you are running from the backend directory so the default `./.hf-cache` path is valid.
+Make sure you:
+- are running from the backend directory so `./.hf-cache` resolves correctly
+- ran `./venv/bin/python scripts/download_models.py` before starting the server
 
 ### Docker/Render runtime should not download models
 
