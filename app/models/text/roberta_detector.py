@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.models.hf_loader import load_text_pipeline
 
@@ -24,6 +24,7 @@ def _clamp01(x: float) -> float:
 class BaseRobertaTextDetector:
     name: str
     model_name: str
+    chunk_overlap_tokens = 64
 
     def __init__(self, device: Optional[str | int] = None):
         self.device = device
@@ -35,6 +36,36 @@ class BaseRobertaTextDetector:
         start = time.time()
         self._pipe = load_text_pipeline(self.model_name, device=self.device)
         logger.info(f"Loaded {self.name} in {(time.time() - start):.2f}s")
+
+    def _chunk_text(self, text: str) -> List[Tuple[str, int]]:
+        assert self._pipe is not None
+        tokenizer = self._pipe.tokenizer
+        model_max_length = int(getattr(tokenizer, "model_max_length", 512) or 512)
+        if model_max_length <= 0 or model_max_length > 100000:
+            model_max_length = 512
+
+        # Reserve space for special tokens added by the classifier pipeline.
+        chunk_size = max(32, model_max_length - 2)
+        overlap = min(self.chunk_overlap_tokens, max(0, chunk_size // 4))
+        stride = max(1, chunk_size - overlap)
+
+        token_ids = tokenizer.encode(text, add_special_tokens=False)
+        if not token_ids:
+            return [(text, 0)]
+
+        if len(token_ids) <= chunk_size:
+            return [(text, len(token_ids))]
+
+        chunks: List[Tuple[str, int]] = []
+        for start in range(0, len(token_ids), stride):
+            window = token_ids[start : start + chunk_size]
+            if not window:
+                break
+            chunk_text = tokenizer.decode(window, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+            chunks.append((chunk_text, len(window)))
+            if start + chunk_size >= len(token_ids):
+                break
+        return chunks
 
     def _parse(self, results: list[dict]) -> Tuple[float, float]:
         ai_keywords = ("fake", "ai", "generated", "machine", "label_1")
@@ -73,9 +104,36 @@ class BaseRobertaTextDetector:
 
         start = time.time()
         try:
-            results = self._pipe(text)
+            chunks = self._chunk_text(text)
+            raw_results: List[Dict[str, Any]] = []
+            total_weight = 0
+            ai_sum = 0.0
+            human_sum = 0.0
+
+            for chunk_text, token_count in chunks:
+                chunk_results = self._pipe(
+                    chunk_text,
+                    truncation=True,
+                    max_length=min(
+                        int(getattr(self._pipe.tokenizer, "model_max_length", 512) or 512),
+                        512,
+                    ),
+                )
+                ai_score, human_score = self._parse(chunk_results)
+                weight = max(1, token_count)
+                ai_sum += ai_score * weight
+                human_sum += human_score * weight
+                total_weight += weight
+                raw_results.append(
+                    {
+                        "token_count": token_count,
+                        "results": chunk_results,
+                    }
+                )
+
             inference_ms = (time.time() - start) * 1000.0
-            ai_score, human_score = self._parse(results)
+            ai_score = _clamp01(ai_sum / max(1, total_weight))
+            human_score = _clamp01(human_sum / max(1, total_weight))
             return {
                 "success": True,
                 "detector": self.name,
@@ -84,7 +142,8 @@ class BaseRobertaTextDetector:
                 "human_probability": human_score,
                 "confidence": max(ai_score, human_score),
                 "inference_time_ms": inference_ms,
-                "raw_results": results,
+                "raw_results": raw_results,
+                "chunks_processed": len(chunks),
                 "is_ai_generated": ai_score > 0.5,
             }
         except Exception as e:
