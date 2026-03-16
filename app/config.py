@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     ]
     
     # Model paths (adjust as needed)
-    # MODEL_CACHE_DIR: str = "/opt/huggingface"
-    # HF_HOME: str = "/opt/huggingface"
+    MODEL_CACHE_DIR: str = "./models/cache"
+    HF_HOME: str = "./.hf-cache"    
     
     HF_LOCAL_FILES_ONLY: bool = True
     
