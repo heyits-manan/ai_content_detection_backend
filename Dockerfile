@@ -1,26 +1,22 @@
-FROM python:3.13-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    HF_HOME=/opt/huggingface \
-    TRANSFORMERS_CACHE=/opt/huggingface \
-    HUGGINGFACE_HUB_CACHE=/opt/huggingface/hub \
-    HF_HUB_DISABLE_TELEMETRY=1
+FROM python:3.11-slim
 
 WORKDIR /app
 
 RUN mkdir -p /opt/huggingface /app/uploads
 
+ENV HF_HOME=/opt/huggingface
+
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
 
 COPY scripts/download_models.py scripts/download_models.py
 RUN python scripts/download_models.py
 
 ENV HF_LOCAL_FILES_ONLY=true \
     HF_HUB_OFFLINE=1 \
-    TRANSFORMERS_OFFLINE=1
+    TRANSFORMERS_OFFLINE=1 \
+    HF_HUB_ENABLE_HF_TRANSFER=1
 
 COPY app app
 COPY scripts scripts
