@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     HF_LOCAL_FILES_ONLY: bool = True
     
     # File upload settings
-    MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024  # 100MB
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     MAX_VIDEO_UPLOAD_SIZE: int = 250 * 1024 * 1024  # 250MB
     UPLOAD_DIR: str = "./uploads"
     ALLOWED_IMAGE_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".webp"]
