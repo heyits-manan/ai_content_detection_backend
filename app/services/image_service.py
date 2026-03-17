@@ -7,6 +7,8 @@ import os
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 from PIL import Image
 from fastapi import UploadFile, HTTPException
 from uuid import uuid4
@@ -65,6 +67,67 @@ def average_ai_probabilities(per_model: List[Dict[str, Any]]) -> Tuple[float, fl
     avg_ai = sum(float(r.get("ai_probability", 0.0)) for r in successes) / len(successes)
     avg_real = sum(float(r.get("real_probability", 0.0)) for r in successes) / len(successes)
     return clamp01(avg_ai), clamp01(avg_real)
+
+
+def _frame_to_pil_image(frame: np.ndarray | Image.Image) -> Image.Image:
+    """
+    Convert either a PIL image or an OpenCV-style ndarray into RGB PIL format.
+    """
+    if isinstance(frame, Image.Image):
+        return frame.convert("RGB")
+
+    if not isinstance(frame, np.ndarray):
+        raise TypeError("frame must be a numpy array or PIL image")
+
+    if frame.ndim == 2:
+        return Image.fromarray(frame).convert("RGB")
+
+    if frame.ndim != 3:
+        raise ValueError(f"Unsupported frame shape: {frame.shape}")
+
+    channels = frame.shape[2]
+    if channels == 3:
+        return Image.fromarray(frame[:, :, ::-1]).convert("RGB")
+    if channels == 4:
+        return Image.fromarray(frame[:, :, [2, 1, 0, 3]], mode="RGBA").convert("RGB")
+    raise ValueError(f"Unsupported frame channel count: {channels}")
+
+
+def run_image_ensemble(frame: np.ndarray | Image.Image) -> float:
+    """
+    Run the existing image ensemble on a single frame and return the AI score.
+
+    `np.ndarray` inputs are treated as OpenCV BGR/BGRA frames.
+    """
+    image = _frame_to_pil_image(frame)
+    detectors = get_detectors(tuple(settings.IMAGE_MODELS))
+
+    per_model: List[Dict[str, Any]] = []
+    for detector in detectors:
+        try:
+            per_model.append(detector.predict(image))
+        except Exception as e:
+            per_model.append(
+                {
+                    "success": False,
+                    "detector": getattr(detector, "name", "unknown"),
+                    "model_used": getattr(detector, "model_name", "unknown"),
+                    "error": str(e),
+                }
+            )
+
+    if not any(result.get("success") is True for result in per_model):
+        raise RuntimeError("All image detectors failed")
+
+    avg_ai, _ = average_ai_probabilities(per_model)
+    return avg_ai
+
+
+def ensure_image_ensemble_loaded() -> None:
+    """
+    Warm the image ensemble into process memory before parallel inference starts.
+    """
+    get_detectors(tuple(settings.IMAGE_MODELS))
 
 
 class ImageDetectionService:

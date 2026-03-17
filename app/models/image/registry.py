@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache
-from typing import Dict, List, Optional
+import threading
+from typing import Dict, List
 
 from app.models.image.base import BaseImageDetector
 from app.models.image.sdxl_detector import SDXLDetector
@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 DetectorKey = str
+_DETECTOR_CACHE: Dict[tuple[DetectorKey, ...], List[BaseImageDetector]] = {}
+_DETECTOR_CACHE_LOCK = threading.Lock()
 
 
 def available_detector_keys() -> List[DetectorKey]:
@@ -27,7 +29,6 @@ def create_detector(key: DetectorKey) -> BaseImageDetector:
     return factory()
 
 
-@lru_cache(maxsize=1)
 def get_detectors(keys: tuple[DetectorKey, ...]) -> List[BaseImageDetector]:
     """
     Process-level cache of instantiated detectors.
@@ -35,11 +36,22 @@ def get_detectors(keys: tuple[DetectorKey, ...]) -> List[BaseImageDetector]:
     NOTE: This is important because `ImageDetectionService` is currently created per-request
     via FastAPI dependency injection.
     """
-    detectors: List[BaseImageDetector] = []
-    for key in keys:
-        logger.info(f"Loading image detector '{key}'...")
-        detectors.append(create_detector(key))
-    return detectors
+    cached = _DETECTOR_CACHE.get(keys)
+    if cached is not None:
+        return cached
+
+    with _DETECTOR_CACHE_LOCK:
+        cached = _DETECTOR_CACHE.get(keys)
+        if cached is not None:
+            return cached
+
+        detectors: List[BaseImageDetector] = []
+        for key in keys:
+            logger.info(f"Loading image detector '{key}'...")
+            detectors.append(create_detector(key))
+
+        _DETECTOR_CACHE[keys] = detectors
+        return detectors
 
 
 _DETECTOR_FACTORIES: Dict[DetectorKey, callable] = {

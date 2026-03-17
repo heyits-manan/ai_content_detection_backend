@@ -1,3 +1,5 @@
+import os
+
 from pydantic_settings import BaseSettings
 from typing import Dict, List
 
@@ -23,8 +25,20 @@ class Settings(BaseSettings):
     
     # File upload settings
     MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024  # 100MB
+    MAX_VIDEO_UPLOAD_SIZE: int = 250 * 1024 * 1024  # 250MB
     UPLOAD_DIR: str = "./uploads"
     ALLOWED_IMAGE_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".webp"]
+    ALLOWED_VIDEO_EXTENSIONS: List[str] = [".mp4", ".mov", ".avi", ".mkv", ".webm"]
+    ALLOWED_VIDEO_CONTENT_TYPES: List[str] = [
+        "video/mp4",
+        "video/quicktime",
+        "video/x-msvideo",
+        "video/x-matroska",
+        "video/webm",
+        "application/mp4",
+        "application/octet-stream",
+    ]
+    VIDEO_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
     
     # Device settings
     USE_GPU: bool = True
@@ -45,6 +59,11 @@ class Settings(BaseSettings):
     IMAGE_DETECT_RATE_LIMIT: str = "10/minute"
     IMAGE_BATCH_RATE_LIMIT: str = "3/minute"
     IMAGE_HEALTH_RATE_LIMIT: str = "60/minute"
+    VIDEO_DEFAULT_NUM_FRAMES: int = 16
+    VIDEO_MAX_WORKERS: int = max(1, min(4, os.cpu_count() or 1))
+    VIDEO_INFERENCE_TIMEOUT_SECONDS: float = 180.0
+    VIDEO_DETECT_RATE_LIMIT: str = "5/minute"
+    VIDEO_HEALTH_RATE_LIMIT: str = "60/minute"
     TEXT_MODELS: List[str] = ["openai_roberta", "hello_simpleai_roberta"]
     TEXT_MODEL_WEIGHTS: Dict[str, float] = {
         "openai_roberta": 1.0,
