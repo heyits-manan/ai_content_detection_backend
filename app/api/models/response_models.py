@@ -85,3 +85,16 @@ class TextDetectionResponse(BaseModel):
     success: bool
     data: Optional[TextDetectionData] = None
     error: Optional[str] = None
+
+
+class VideoFrameResult(BaseModel):
+    frame_index: int
+    probability: float
+
+
+class VideoDetectionResponse(BaseModel):
+    ai_probability: float
+    frame_results: List[VideoFrameResult]
+    aggregation: str
+    num_frames_used: int
+    processing_time_ms: Optional[float] = None
