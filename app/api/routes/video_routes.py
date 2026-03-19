@@ -45,13 +45,6 @@ async def detect_video(
     )
     try:
         result = await service.detect_from_upload(file=file, num_frames=num_frames)
-        logger.info(
-            "Video detect request completed: filename=%s ai_probability=%.4f num_frames_used=%s",
-            file.filename,
-            result["ai_probability"],
-            result["num_frames_used"],
-        )
-        return result
     except HTTPException as exc:
         logger.warning(
             "Video detect request failed: filename=%s status=%s detail=%s",
@@ -60,9 +53,14 @@ async def detect_video(
             exc.detail,
         )
         raise
-    except Exception as exc:
-        logger.exception("Unexpected video detect request error for filename=%s", file.filename)
-        raise HTTPException(status_code=500, detail=f"Unexpected video detection error: {exc}") from exc
+
+    logger.info(
+        "Video detect request completed: filename=%s ai_probability=%.4f num_frames_used=%s",
+        file.filename,
+        result["ai_probability"],
+        result["num_frames_used"],
+    )
+    return result
 
 
 @router.get("/health", response_model=HealthResponse)
