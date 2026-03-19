@@ -5,7 +5,7 @@ Video Detection API Routes
 from functools import lru_cache
 import logging
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 
 from app.api.models.response_models import HealthResponse, VideoDetectionResponse
 from app.config import settings
@@ -43,16 +43,7 @@ async def detect_video(
         num_frames,
         request.headers.get("content-length"),
     )
-    try:
-        result = await service.detect_from_upload(file=file, num_frames=num_frames)
-    except HTTPException as exc:
-        logger.warning(
-            "Video detect request failed: filename=%s status=%s detail=%s",
-            file.filename,
-            exc.status_code,
-            exc.detail,
-        )
-        raise
+    result = await service.detect_from_upload(file=file, num_frames=num_frames)
 
     logger.info(
         "Video detect request completed: filename=%s ai_probability=%.4f num_frames_used=%s",

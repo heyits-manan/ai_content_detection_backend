@@ -21,6 +21,8 @@ class ErrorCode(StrEnum):
     BAD_REQUEST = "bad_request"
     VALIDATION_ERROR = "validation_error"
     RATE_LIMIT_EXCEEDED = "rate_limit_exceeded"
+    UNPROCESSABLE_ENTITY = "unprocessable_entity"
+    INFERENCE_FAILED = "inference_failed"
     INTERNAL_SERVER_ERROR = "internal_server_error"
 
 
@@ -38,6 +40,52 @@ class AppError(Exception):
         self.message = message
         self.status_code = status_code
         self.details = details
+
+
+class BadRequestError(AppError):
+    def __init__(self, message: str, details: Any | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.BAD_REQUEST,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class ValidationFailedError(AppError):
+    def __init__(self, message: str, details: Any | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.VALIDATION_ERROR,
+            message=message,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            details=details,
+        )
+
+
+class UnprocessableEntityError(AppError):
+    def __init__(self, message: str, details: Any | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.UNPROCESSABLE_ENTITY,
+            message=message,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            details=details,
+        )
+
+
+class InferenceFailedError(AppError):
+    def __init__(
+        self,
+        message: str,
+        details: Any | None = None,
+        *,
+        status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+    ) -> None:
+        super().__init__(
+            code=ErrorCode.INFERENCE_FAILED,
+            message=message,
+            status_code=status_code,
+            details=details,
+        )
 
 
 def get_request_id(request: Request) -> str:

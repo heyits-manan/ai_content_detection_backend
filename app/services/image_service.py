@@ -10,10 +10,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
-from fastapi import UploadFile, HTTPException
+from fastapi import UploadFile
 from uuid import uuid4
 
 from app.config import settings
+from app.core.exceptions import BadRequestError, InferenceFailedError
 from app.models.image.base import clamp01
 from app.models.image.registry import get_detectors
 
@@ -281,13 +282,13 @@ class ImageDetectionService:
             # Validate
             is_valid, error_msg, temp_path = await self.validate_image(file)
             if not is_valid:
-                raise HTTPException(status_code=400, detail=error_msg)
+                raise BadRequestError(error_msg or "Invalid image upload")
             
             # Detect
             result = await self.detect_from_file(temp_path)
             
             if not result.get("success", False):
-                raise HTTPException(status_code=500, detail=result.get("error", "Detection failed"))
+                raise InferenceFailedError(result.get("error", "Detection failed"))
             
             return result
             

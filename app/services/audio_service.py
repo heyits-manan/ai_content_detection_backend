@@ -13,9 +13,10 @@ from typing import Any, Dict, List
 import aiofiles
 import librosa
 import numpy as np
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 
 from app.config import settings
+from app.core.exceptions import BadRequestError, InferenceFailedError, UnprocessableEntityError
 from app.models.audio.voice_detector import VoiceDeepfakeDetector
 from app.models.image.base import clamp01
 
@@ -124,9 +125,9 @@ class AudioDetectionService:
             result["processing_time_ms"] = round((time.perf_counter() - started_at) * 1000.0, 2)
             return result
         except AudioValidationError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+            raise BadRequestError(str(exc)) from exc
         except AudioDecodeError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+            raise UnprocessableEntityError(str(exc)) from exc
         finally:
             await file.close()
             if temp_path and os.path.exists(temp_path):
@@ -174,7 +175,7 @@ class AudioDetectionService:
             )
 
         if not chunk_results:
-            raise HTTPException(status_code=500, detail="Audio inference failed for all chunks")
+            raise InferenceFailedError("Audio inference failed for all chunks")
 
         aggregated = aggregate_audio_scores(chunk_results)
         processing_time_ms = (time.perf_counter() - started_at) * 1000.0

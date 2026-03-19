@@ -5,8 +5,11 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.exceptions import (
     AppError,
+    BadRequestError,
     ErrorCode,
+    InferenceFailedError,
     REQUEST_ID_HEADER,
+    UnprocessableEntityError,
     add_request_id_middleware,
     app_error_handler,
     http_exception_handler,
@@ -27,12 +30,15 @@ def create_test_app() -> TestClient:
 
     @app.get("/app-error")
     async def app_error():
-        raise AppError(
-            code=ErrorCode.BAD_REQUEST,
-            message="Invalid media payload",
-            status_code=400,
-            details={"field": "file"},
-        )
+        raise BadRequestError("Invalid media payload", details={"field": "file"})
+
+    @app.get("/inference-error")
+    async def inference_error():
+        raise InferenceFailedError("Inference timed out", details={"kind": "timeout"})
+
+    @app.get("/unprocessable")
+    async def unprocessable():
+        raise UnprocessableEntityError("Media could not be decoded")
 
     @app.get("/http-error")
     async def http_error():
@@ -74,6 +80,29 @@ def test_http_exception_uses_stable_error_schema():
     assert body["error"]["code"] == "bad_request"
     assert body["error"]["message"] == "Not found"
     assert body["error"]["request_id"]
+
+
+def test_inference_error_uses_typed_error_code():
+    client = create_test_app()
+
+    response = client.get("/inference-error")
+    body = response.json()
+
+    assert response.status_code == 500
+    assert body["error"]["code"] == "inference_failed"
+    assert body["error"]["message"] == "Inference timed out"
+    assert body["error"]["details"] == {"kind": "timeout"}
+
+
+def test_unprocessable_error_uses_422_status():
+    client = create_test_app()
+
+    response = client.get("/unprocessable")
+    body = response.json()
+
+    assert response.status_code == 422
+    assert body["error"]["code"] == "unprocessable_entity"
+    assert body["error"]["message"] == "Media could not be decoded"
 
 
 def test_unhandled_exception_uses_internal_server_error_shape():

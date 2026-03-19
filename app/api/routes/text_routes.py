@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 
 from app.api.models.request_models import TextDetectionRequest
 from app.api.models.response_models import HealthResponse, TextDetectionResponse
@@ -28,8 +28,6 @@ async def detect_text(
     service: TextDetectionService = Depends(get_text_service),
 ):
     result = await service.detect_text(payload.text)
-    if not result.get("success", False):
-        raise HTTPException(status_code=500, detail=result.get("error", "Text detection failed"))
     return TextDetectionResponse(success=True, data=result)
 
 
