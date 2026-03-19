@@ -19,16 +19,18 @@ class Settings(BaseSettings):
     
     # Model paths (adjust as needed)
     MODEL_CACHE_DIR: str = "./models/cache"
-    HF_HOME: str = "/opt/huggingface/hub"
+    HF_HOME: str = "/opt/huggingface/hub" #change this to .hf-cache/ when running locally
     
     HF_LOCAL_FILES_ONLY: bool = True
     
     # File upload settings
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     MAX_VIDEO_UPLOAD_SIZE: int = 250 * 1024 * 1024  # 250MB
+    MAX_AUDIO_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
     UPLOAD_DIR: str = "./uploads"
     ALLOWED_IMAGE_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".webp"]
     ALLOWED_VIDEO_EXTENSIONS: List[str] = [".mp4", ".mov", ".avi", ".mkv", ".webm"]
+    ALLOWED_AUDIO_EXTENSIONS: List[str] = [".wav", ".mp3", ".flac", ".m4a", ".ogg"]
     ALLOWED_VIDEO_CONTENT_TYPES: List[str] = [
         "video/mp4",
         "video/quicktime",
@@ -38,7 +40,21 @@ class Settings(BaseSettings):
         "application/mp4",
         "application/octet-stream",
     ]
+    ALLOWED_AUDIO_CONTENT_TYPES: List[str] = [
+        "audio/wav",
+        "audio/x-wav",
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/flac",
+        "audio/x-flac",
+        "audio/mp4",
+        "audio/x-m4a",
+        "audio/aac",
+        "audio/ogg",
+        "application/octet-stream",
+    ]
     VIDEO_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
+    AUDIO_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
     
     # Device settings
     USE_GPU: bool = True
@@ -64,6 +80,13 @@ class Settings(BaseSettings):
     VIDEO_INFERENCE_TIMEOUT_SECONDS: float = 180.0
     VIDEO_DETECT_RATE_LIMIT: str = "5/minute"
     VIDEO_HEALTH_RATE_LIMIT: str = "60/minute"
+    AUDIO_MODEL: str = "garystafford/wav2vec2-deepfake-voice-detector"
+    AUDIO_SAMPLE_RATE: int = 16000
+    AUDIO_CHUNK_SECONDS: float = 5.0
+    AUDIO_CHUNK_OVERLAP_SECONDS: float = 1.0
+    AUDIO_MIN_CHUNK_SECONDS: float = 2.5
+    AUDIO_DETECT_RATE_LIMIT: str = "10/minute"
+    AUDIO_HEALTH_RATE_LIMIT: str = "60/minute"
     TEXT_MODELS: List[str] = ["openai_roberta", "hello_simpleai_roberta"]
     TEXT_MODEL_WEIGHTS: Dict[str, float] = {
         "openai_roberta": 1.0,
