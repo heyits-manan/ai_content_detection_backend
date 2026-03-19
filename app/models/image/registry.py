@@ -7,7 +7,6 @@ from typing import Dict, List
 from app.models.image.base import BaseImageDetector
 from app.models.image.sdxl_detector import SDXLDetector
 from app.models.image.deepfake_detector import DeepfakeDetectorV1
-from app.models.image.umm_maybe_detector import UMMMaybeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -57,5 +56,4 @@ def get_detectors(keys: tuple[DetectorKey, ...]) -> List[BaseImageDetector]:
 _DETECTOR_FACTORIES: Dict[DetectorKey, callable] = {
     "sdxl": lambda: SDXLDetector(),
     "deepfake_v1": lambda: DeepfakeDetectorV1(),
-    "umm_maybe": lambda: UMMMaybeDetector(),
 }

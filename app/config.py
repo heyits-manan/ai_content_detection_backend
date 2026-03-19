@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     
     # Model paths (adjust as needed)
     MODEL_CACHE_DIR: str = "./models/cache"
-    HF_HOME: str = "/opt/huggingface/hub" #change this to .hf-cache/ when running locally
+    HF_HOME: str = "/opt/huggingface/hub"  # change this to ./.hf-cache when running locally
     
     HF_LOCAL_FILES_ONLY: bool = True
     
@@ -62,13 +62,12 @@ class Settings(BaseSettings):
 
     # Image model selection / ensemble
     # You can override via env, e.g.
-    # IMAGE_MODELS='["deepfake_v1","sdxl","umm_maybe"]'
-    # IMAGE_MODEL_WEIGHTS='{"deepfake_v1":1.0,"sdxl":1.0,"umm_maybe":1.0}'
-    IMAGE_MODELS: List[str] = ["deepfake_v1", "sdxl", "umm_maybe"]
+    # IMAGE_MODELS='["deepfake_v1","sdxl"]'
+    # IMAGE_MODEL_WEIGHTS='{"deepfake_v1":1.0,"sdxl":1.0}'
+    IMAGE_MODELS: List[str] = ["deepfake_v1", "sdxl"]
     IMAGE_MODEL_WEIGHTS: Dict[str, float] = {
         "deepfake_v1": 1.0,
         "sdxl": 1.0,
-        "umm_maybe": 1.0,
     }
     RETURN_PER_MODEL: bool = True
     DEFAULT_RATE_LIMIT: str = "30/minute"
