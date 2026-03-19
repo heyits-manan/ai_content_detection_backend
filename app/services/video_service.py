@@ -17,9 +17,14 @@ from typing import Any, Callable, Dict, List, Sequence, Tuple
 import aiofiles
 import cv2
 import numpy as np
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 
 from app.config import settings
+from app.core.exceptions import (
+    BadRequestError,
+    InferenceFailedError,
+    UnprocessableEntityError,
+)
 from app.models.image.base import clamp01
 from app.services.image_service import ensure_image_ensemble_loaded, run_image_ensemble
 
@@ -281,19 +286,23 @@ class VideoDetectionService:
             return result
         except VideoValidationError as exc:
             logger.warning("Video validation failed for filename=%s: %s", file.filename, exc)
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+            raise BadRequestError(str(exc)) from exc
         except VideoDecodeError as exc:
             logger.warning("Video decode failed for filename=%s: %s", file.filename, exc)
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+            raise UnprocessableEntityError(str(exc)) from exc
         except NoFramesExtractedError as exc:
             logger.warning("No frames extracted for filename=%s: %s", file.filename, exc)
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+            raise UnprocessableEntityError(str(exc)) from exc
         except FrameInferenceTimeoutError as exc:
             logger.warning("Video inference timed out for filename=%s: %s", file.filename, exc)
-            raise HTTPException(status_code=504, detail=str(exc)) from exc
+            raise InferenceFailedError(
+                str(exc),
+                details={"kind": "timeout"},
+                status_code=504,
+            ) from exc
         except FrameInferenceError as exc:
             logger.warning("Video inference failed for filename=%s: %s", file.filename, exc)
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
+            raise InferenceFailedError(str(exc)) from exc
         except Exception:
             logger.exception("Unhandled video detection error for filename=%s", file.filename)
             raise

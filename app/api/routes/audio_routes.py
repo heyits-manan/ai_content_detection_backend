@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 
 from app.api.models.response_models import AudioDetectionResponse, HealthResponse
 from app.config import settings

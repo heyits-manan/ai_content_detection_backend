@@ -5,6 +5,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Tuple
 
 from app.config import settings
+from app.core.exceptions import InferenceFailedError
 from app.models.text.roberta_detector import (
     HelloSimpleAIRobertaDetector,
     OpenAIRobertaDetector,
@@ -97,12 +98,13 @@ class TextDetectionService:
 
         successful_models = [result for result in per_model if result.get("success") is True]
         if not successful_models:
-            return {
-                "success": False,
-                "error": "All text detectors failed",
-                "text_length": len(text),
-                "per_model": per_model,
-            }
+            raise InferenceFailedError(
+                "All text detectors failed",
+                details={
+                    "text_length": len(text),
+                    "per_model": per_model,
+                },
+            )
 
         weighted_ai = combine_text_probabilities(per_model, settings.TEXT_MODEL_WEIGHTS)
         avg_ai, avg_human = average_text_probabilities(per_model)
