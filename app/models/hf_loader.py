@@ -42,7 +42,7 @@ def load_image_pipeline(model_name: str, device: Optional[str | int] = None):
 
     pipeline_kwargs: Dict[str, Any] = {"model": model}
     try:
-        processor = AutoImageProcessor.from_pretrained(model_name, **common_kwargs)
+        processor = AutoImageProcessor.from_pretrained(model_name, **common_kwargs) 
         pipeline_kwargs["image_processor"] = processor
     except Exception:
         try:
@@ -77,3 +77,19 @@ def load_text_pipeline(model_name: str, device: Optional[str | int] = None):
     if device is not None:
         pipeline_kwargs["device"] = device
     return pipeline("text-classification", **pipeline_kwargs)
+
+
+def load_audio_classification_components(model_name: str):
+    from transformers import (  # type: ignore
+        AutoFeatureExtractor,
+        AutoModelForAudioClassification,
+    )
+
+    common_kwargs = _hf_common_kwargs()
+    try:
+        model = AutoModelForAudioClassification.from_pretrained(model_name, **common_kwargs)
+        feature_extractor = AutoFeatureExtractor.from_pretrained(model_name, **common_kwargs)
+    except Exception as exc:
+        raise _cache_only_error(model_name, exc)
+
+    return model, feature_extractor

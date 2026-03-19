@@ -98,3 +98,34 @@ class VideoDetectionResponse(BaseModel):
     aggregation: str
     num_frames_used: int
     processing_time_ms: Optional[float] = None
+
+
+class AudioChunkResult(BaseModel):
+    chunk_index: int
+    start_seconds: float
+    end_seconds: float
+    probability: float
+
+
+class AudioDetectionData(BaseModel):
+    success: bool
+    ai_probability: float
+    human_probability: float
+    average_ai_probability: float
+    max_ai_probability: float
+    is_ai_generated: bool
+    confidence: float
+    aggregation: str
+    num_chunks_used: int
+    duration_seconds: float
+    filename: str
+    chunk_results: List[AudioChunkResult]
+    processing_time_ms: Optional[float] = None
+    model_used: Optional[str] = None
+    error: Optional[str] = None
+
+
+class AudioDetectionResponse(BaseModel):
+    success: bool
+    data: Optional[AudioDetectionData] = None
+    error: Optional[str] = None
