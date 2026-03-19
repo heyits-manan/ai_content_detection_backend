@@ -9,7 +9,6 @@ from transformers import (  # type: ignore
 IMAGE_MODELS = [
     "Organika/sdxl-detector",
     "prithivMLmods/deepfake-detector-model-v1",
-    "umm-maybe/AI-image-detector",
 ]
 
 TEXT_MODELS = [
