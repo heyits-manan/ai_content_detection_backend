@@ -26,13 +26,8 @@ async def detect_audio(
     file: UploadFile = File(..., description="Audio file to analyze"),
     service: AudioDetectionService = Depends(get_audio_service),
 ):
-    try:
-        result = await service.detect_from_upload(file)
-        return AudioDetectionResponse(success=True, data=result)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Unexpected audio detection error: {exc}") from exc
+    result = await service.detect_from_upload(file)
+    return AudioDetectionResponse(success=True, data=result)
 
 
 @router.get("/health", response_model=HealthResponse)

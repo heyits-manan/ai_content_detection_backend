@@ -27,15 +27,10 @@ async def detect_text(
     payload: TextDetectionRequest,
     service: TextDetectionService = Depends(get_text_service),
 ):
-    try:
-        result = await service.detect_text(payload.text)
-        if not result.get("success", False):
-            raise HTTPException(status_code=500, detail=result.get("error", "Text detection failed"))
-        return TextDetectionResponse(success=True, data=result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    result = await service.detect_text(payload.text)
+    if not result.get("success", False):
+        raise HTTPException(status_code=500, detail=result.get("error", "Text detection failed"))
+    return TextDetectionResponse(success=True, data=result)
 
 
 @router.get("/health", response_model=HealthResponse)

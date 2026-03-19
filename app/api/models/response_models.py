@@ -129,3 +129,15 @@ class AudioDetectionResponse(BaseModel):
     success: bool
     data: Optional[AudioDetectionData] = None
     error: Optional[str] = None
+
+
+class ErrorBody(BaseModel):
+    code: str
+    message: str
+    request_id: str
+    details: Optional[Any] = None
+
+
+class ErrorResponse(BaseModel):
+    success: bool = False
+    error: ErrorBody
