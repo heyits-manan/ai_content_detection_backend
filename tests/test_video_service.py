@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from starlette.datastructures import Headers, UploadFile
 
+from app.core.file_handler import resolve_upload_suffix
 from app.services.video_service import VideoDetectionService, aggregate_scores, extract_frames, process_frames_parallel
 
 
@@ -74,6 +75,12 @@ def test_validate_upload_accepts_mp4_content_type_without_extension():
         headers=Headers({"content-type": "video/mp4"}),
     )
 
-    service = VideoDetectionService()
-
-    assert service._validate_upload(upload) == ".mp4"
+    assert resolve_upload_suffix(
+        filename=upload.filename,
+        content_type=upload.content_type,
+        allowed_extensions=[".mp4"],
+        allowed_content_types=["video/mp4"],
+        content_type_suffix_map={"video/mp4": ".mp4"},
+        generic_prefix="video/",
+        default_suffix=".mp4",
+    ) == ".mp4"

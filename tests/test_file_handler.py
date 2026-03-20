@@ -1,3 +1,4 @@
+import asyncio
 from io import BytesIO
 
 import pytest
@@ -31,41 +32,44 @@ def test_resolve_upload_suffix_accepts_content_type_mapping_without_extension():
     assert suffix == ".mp4"
 
 
-@pytest.mark.asyncio
-async def test_save_upload_to_temp_rejects_empty_upload(tmp_path):
+def test_save_upload_to_temp_rejects_empty_upload(tmp_path):
     upload = UploadFile(
         file=BytesIO(b""),
         filename="empty.wav",
         headers=Headers({"content-type": "audio/wav"}),
     )
 
-    with pytest.raises(ValueError, match="Uploaded file is empty"):
-        await save_upload_to_temp(
-            file=upload,
-            upload_dir=str(tmp_path),
-            prefix="audio_",
-            suffix=".wav",
-            chunk_size=1024,
-            max_size_bytes=2048,
-        )
+    async def run_test():
+        with pytest.raises(ValueError, match="Uploaded file is empty"):
+            await save_upload_to_temp(
+                file=upload,
+                upload_dir=str(tmp_path),
+                prefix="audio_",
+                suffix=".wav",
+                chunk_size=1024,
+                max_size_bytes=2048,
+            )
+
+    asyncio.run(run_test())
 
 
-@pytest.mark.asyncio
-async def test_save_upload_to_temp_writes_file_and_tracks_size(tmp_path):
+def test_save_upload_to_temp_writes_file_and_tracks_size(tmp_path):
     upload = UploadFile(
         file=BytesIO(b"123456"),
         filename="sample.wav",
         headers=Headers({"content-type": "audio/wav"}),
     )
 
-    saved = await save_upload_to_temp(
-        file=upload,
-        upload_dir=str(tmp_path),
-        prefix="audio_",
-        suffix=".wav",
-        chunk_size=2,
-        max_size_bytes=1024,
-    )
+    async def run_test():
+        return await save_upload_to_temp(
+            file=upload,
+            upload_dir=str(tmp_path),
+            prefix="audio_",
+            suffix=".wav",
+            chunk_size=2,
+            max_size_bytes=1024,
+        )
 
+    saved = asyncio.run(run_test())
     assert saved.size_bytes == 6
     assert saved.suffix == ".wav"
