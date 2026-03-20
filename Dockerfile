@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN mkdir -p /opt/huggingface /app/uploads
 
-ENV HF_HOME=/opt/huggingface
+ENV HF_HOME=/opt/huggingface/hub
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
