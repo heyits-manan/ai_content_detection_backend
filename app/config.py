@@ -28,7 +28,14 @@ class Settings(BaseSettings):
     MAX_VIDEO_UPLOAD_SIZE: int = 250 * 1024 * 1024  # 250MB
     MAX_AUDIO_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
     UPLOAD_DIR: str = "./uploads"
+    IMAGE_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
     ALLOWED_IMAGE_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".webp"]
+    ALLOWED_IMAGE_CONTENT_TYPES: List[str] = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/octet-stream",
+    ]
     ALLOWED_VIDEO_EXTENSIONS: List[str] = [".mp4", ".mov", ".avi", ".mkv", ".webm"]
     ALLOWED_AUDIO_EXTENSIONS: List[str] = [".wav", ".mp3", ".flac", ".m4a", ".ogg"]
     ALLOWED_VIDEO_CONTENT_TYPES: List[str] = [
@@ -53,6 +60,7 @@ class Settings(BaseSettings):
         "audio/ogg",
         "application/octet-stream",
     ]
+    MAX_IMAGE_PIXELS: int = 40_000_000
     VIDEO_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
     AUDIO_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
     
