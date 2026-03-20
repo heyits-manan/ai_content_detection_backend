@@ -5,16 +5,15 @@ Handles image validation, preprocessing, and detection orchestration
 
 import os
 import logging
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from PIL import Image
 from fastapi import UploadFile
-from uuid import uuid4
 
 from app.config import settings
 from app.core.exceptions import BadRequestError, InferenceFailedError
+from app.core.file_handler import remove_file_if_exists, resolve_upload_suffix, save_upload_to_temp
 from app.models.image.base import clamp01
 from app.models.image.registry import get_detectors
 
@@ -146,55 +145,65 @@ class ImageDetectionService:
             logger.info("Initializing image detector service...")
             keys = tuple(settings.IMAGE_MODELS)
             self.detectors = get_detectors(keys)
-    
-    async def validate_image(self, file: UploadFile) -> tuple:
-        """
-        Validate uploaded image file
-        
-        Args:
-            file: Uploaded file from FastAPI
-            
-        Returns:
-            Tuple of (is_valid, error_message, file_path)
-        """
-        # Check file extension
-        file_ext = Path(file.filename).suffix.lower()
-        if file_ext not in settings.ALLOWED_IMAGE_EXTENSIONS:
-            return False, f"File type {file_ext} not allowed. Allowed: {settings.ALLOWED_IMAGE_EXTENSIONS}", None
-        
-        # Check file size (read first chunk to check)
-        file.file.seek(0, 2)  # Seek to end
-        file_size = file.file.tell()
-        file.file.seek(0)  # Reset to beginning
-        
-        if file_size > settings.MAX_UPLOAD_SIZE:
-            return False, f"File too large. Max size: {settings.MAX_UPLOAD_SIZE / (1024*1024)}MB", None
-        
-        # Save temporarily for processing
-        filename = uuid4().hex + file_ext
-        temp_path = os.path.join(settings.UPLOAD_DIR, f"temp_{filename}")
-        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-        
+
+    async def save_validated_upload(self, file: UploadFile) -> str:
+        suffix = resolve_upload_suffix(
+            filename=file.filename,
+            content_type=file.content_type,
+            allowed_extensions=settings.ALLOWED_IMAGE_EXTENSIONS,
+            allowed_content_types=settings.ALLOWED_IMAGE_CONTENT_TYPES,
+            generic_prefix="image/",
+        )
+        if not suffix:
+            raise BadRequestError(
+                "Invalid image upload.",
+                details={
+                    "filename": file.filename or "<missing>",
+                    "content_type": (file.content_type or "<missing>").lower(),
+                    "allowed_extensions": settings.ALLOWED_IMAGE_EXTENSIONS,
+                },
+            )
+
         try:
-            # Save file
-            content = await file.read()
-            with open(temp_path, "wb") as f:
-                f.write(content)
-            
-            # Verify it's a valid image
-            try:
-                with Image.open(temp_path) as img:
-                    # Just verify it opens, don't need to do anything else
-                    logger.info(f"Image validated: {file.filename}, size: {img.size}, format: {img.format}")
-            except Exception as e:
-                os.remove(temp_path)
-                return False, f"Invalid image file: {str(e)}", None
-            
-            return True, None, temp_path
-            
-        except Exception as e:
-            logger.error(f"Error saving/validating image: {e}")
-            return False, f"Error processing upload: {str(e)}", None
+            saved_upload = await save_upload_to_temp(
+                file=file,
+                upload_dir=settings.UPLOAD_DIR,
+                prefix="image_",
+                suffix=suffix,
+                chunk_size=settings.IMAGE_UPLOAD_CHUNK_SIZE,
+                max_size_bytes=settings.MAX_UPLOAD_SIZE,
+            )
+        except ValueError as exc:
+            raise BadRequestError(str(exc)) from exc
+
+        try:
+            with Image.open(saved_upload.temp_path) as img:
+                img.verify()
+            with Image.open(saved_upload.temp_path) as img:
+                width, height = img.size
+                if width <= 0 or height <= 0:
+                    raise BadRequestError("Invalid image dimensions")
+                if width * height > settings.MAX_IMAGE_PIXELS:
+                    raise BadRequestError(
+                        f"Image is too large to process. Max pixels: {settings.MAX_IMAGE_PIXELS}",
+                        details={"width": width, "height": height},
+                    )
+                logger.info(
+                    "Image validated: filename=%s size=%sx%s format=%s bytes=%s",
+                    file.filename,
+                    width,
+                    height,
+                    img.format,
+                    saved_upload.size_bytes,
+                )
+        except BadRequestError:
+            remove_file_if_exists(saved_upload.temp_path)
+            raise
+        except Exception as exc:
+            remove_file_if_exists(saved_upload.temp_path)
+            raise BadRequestError(f"Invalid image file: {exc}") from exc
+
+        return saved_upload.temp_path
     
     async def detect_from_file(self, file_path: str) -> dict:
         """
@@ -279,12 +288,7 @@ class ImageDetectionService:
         temp_path = None
         
         try:
-            # Validate
-            is_valid, error_msg, temp_path = await self.validate_image(file)
-            if not is_valid:
-                raise BadRequestError(error_msg or "Invalid image upload")
-            
-            # Detect
+            temp_path = await self.save_validated_upload(file)
             result = await self.detect_from_file(temp_path)
             
             if not result.get("success", False):
@@ -293,7 +297,6 @@ class ImageDetectionService:
             return result
             
         finally:
-            # Cleanup temp file
             if temp_path and os.path.exists(temp_path):
                 os.remove(temp_path)
                 logger.debug(f"Cleaned up temp file: {temp_path}")

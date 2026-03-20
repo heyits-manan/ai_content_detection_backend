@@ -8,13 +8,10 @@ import asyncio
 import logging
 import math
 import os
-import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError, as_completed
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Sequence, Tuple
 
-import aiofiles
 import cv2
 import numpy as np
 from fastapi import UploadFile
@@ -25,6 +22,7 @@ from app.core.exceptions import (
     InferenceFailedError,
     UnprocessableEntityError,
 )
+from app.core.file_handler import remove_file_if_exists, resolve_upload_suffix, save_upload_to_temp
 from app.models.image.base import clamp01
 from app.services.image_service import ensure_image_ensemble_loaded, run_image_ensemble
 
@@ -270,8 +268,7 @@ class VideoDetectionService:
         started_at = time.perf_counter()
 
         try:
-            suffix = self._validate_upload(file)
-            temp_path = await self._save_upload_to_temp(file, suffix)
+            temp_path = await self.save_validated_upload(file)
             requested_frames = num_frames or self.default_num_frames
             logger.info(
                 "Starting video detection: filename=%s temp_path=%s requested_frames=%s workers=%s timeout_seconds=%s",
@@ -356,91 +353,41 @@ class VideoDetectionService:
             "num_frames_used": len(frame_results),
         }
 
-    def _validate_upload(self, file: UploadFile) -> str:
-        filename = file.filename or ""
-        suffix = Path(filename).suffix.lower()
-        content_type = (file.content_type or "").lower()
-
-        if suffix in settings.ALLOWED_VIDEO_EXTENSIONS:
-            logger.info("Accepted video upload by extension: filename=%s content_type=%s", filename, content_type)
-            return suffix
-
-        if content_type in CONTENT_TYPE_SUFFIX_MAP:
-            resolved_suffix = CONTENT_TYPE_SUFFIX_MAP[content_type]
-            logger.info(
-                "Accepted video upload by content type: filename=%s content_type=%s resolved_suffix=%s",
-                filename,
-                content_type,
-                resolved_suffix,
-            )
-            return resolved_suffix
-
-        if content_type.startswith("video/"):
-            logger.info(
-                "Accepted generic video upload by content type: filename=%s content_type=%s",
-                filename,
-                content_type,
-            )
-            return ".mp4"
-
-        if not suffix and content_type in settings.ALLOWED_VIDEO_CONTENT_TYPES:
-            logger.info(
-                "Accepted ambiguous video upload: filename=%s content_type=%s",
-                filename,
-                content_type,
-            )
-            return ".mp4"
-
-        logger.warning("Rejected video upload: filename=%s content_type=%s suffix=%s", filename, content_type, suffix)
-        if suffix or content_type:
-            raise VideoValidationError(
-                "Invalid video upload. "
-                f"filename={filename or '<missing>'}, content_type={content_type or '<missing>'}, "
-                f"allowed_extensions={settings.ALLOWED_VIDEO_EXTENSIONS}"
-            )
-
-        raise VideoValidationError("Invalid video upload. Missing filename extension and content type.")
-
-    async def _save_upload_to_temp(self, file: UploadFile, suffix: str) -> str:
-        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=suffix,
-            prefix="video_",
-            dir=settings.UPLOAD_DIR,
-        ) as temp_file:
-            temp_path = temp_file.name
-
-        total_bytes = 0
+    async def save_validated_upload(self, file: UploadFile) -> str:
+        suffix = resolve_upload_suffix(
+            filename=file.filename,
+            content_type=file.content_type,
+            allowed_extensions=settings.ALLOWED_VIDEO_EXTENSIONS,
+            allowed_content_types=settings.ALLOWED_VIDEO_CONTENT_TYPES,
+            content_type_suffix_map=CONTENT_TYPE_SUFFIX_MAP,
+            generic_prefix="video/",
+            default_suffix=".mp4",
+        )
+        if not suffix:
+            if file.filename or file.content_type:
+                raise VideoValidationError(
+                    "Invalid video upload. "
+                    f"filename={file.filename or '<missing>'}, content_type={(file.content_type or '<missing>').lower()}, "
+                    f"allowed_extensions={settings.ALLOWED_VIDEO_EXTENSIONS}"
+                )
+            raise VideoValidationError("Invalid video upload. Missing filename extension and content type.")
         try:
-            await file.seek(0)
-            async with aiofiles.open(temp_path, "wb") as output_file:
-                while True:
-                    chunk = await file.read(settings.VIDEO_UPLOAD_CHUNK_SIZE)
-                    if not chunk:
-                        break
-
-                    total_bytes += len(chunk)
-                    if total_bytes > settings.MAX_VIDEO_UPLOAD_SIZE:
-                        raise VideoValidationError(
-                            f"File too large. Max size: {settings.MAX_VIDEO_UPLOAD_SIZE / (1024 * 1024)}MB"
-                        )
-                    await output_file.write(chunk)
-        except Exception:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            raise
-
-        if total_bytes == 0:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            raise VideoValidationError("Uploaded video file is empty")
+            saved_upload = await save_upload_to_temp(
+                file=file,
+                upload_dir=settings.UPLOAD_DIR,
+                prefix="video_",
+                suffix=suffix,
+                chunk_size=settings.VIDEO_UPLOAD_CHUNK_SIZE,
+                max_size_bytes=settings.MAX_VIDEO_UPLOAD_SIZE,
+            )
+        except ValueError as exc:
+            message = str(exc).replace("Uploaded file is empty", "Uploaded video file is empty")
+            raise VideoValidationError(message) from exc
 
         logger.info(
             "Saved uploaded video to temp file: filename=%s temp_path=%s bytes=%s",
             file.filename,
-            temp_path,
-            total_bytes,
+            saved_upload.temp_path,
+            saved_upload.size_bytes,
         )
-        return temp_path
+        return saved_upload.temp_path
