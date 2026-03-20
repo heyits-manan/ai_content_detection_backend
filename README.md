@@ -258,6 +258,63 @@ Make sure you:
 
 If production logs show Hugging Face download requests:
 - confirm Render is using the `Dockerfile`
+
+## GitHub Actions CD To EC2 With Docker Hub
+
+This repo now includes GitHub Actions workflows for:
+- CI on pull requests and pushes to `main`
+- building and pushing the Docker image to Docker Hub
+- deploying the pushed image to an EC2 host over SSH
+
+The Docker image keeps the existing container cache path:
+- `HF_HOME=/opt/huggingface/hub`
+
+Do not change that if you want Docker builds and runtime behavior to stay aligned.
+
+### Required GitHub secrets
+
+Add these repository secrets:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `EC2_HOST`
+- `EC2_USER`
+- `EC2_SSH_KEY`
+- `EC2_PORT` optional, defaults to `22`
+
+### EC2 preparation
+
+On the EC2 host:
+
+1. Install Docker
+2. Install `curl`
+3. Create `/opt/ai-content-detection/.env`
+4. Make sure the security group allows inbound traffic to your public app port
+
+You can use:
+
+```bash
+chmod +x scripts/ec2-first-time-setup.sh
+./scripts/ec2-first-time-setup.sh
+```
+
+### Deployment behavior
+
+On every push to `main`, GitHub Actions will:
+
+1. build the Docker image
+2. push it to Docker Hub with `latest` and a SHA tag
+3. SSH into EC2
+4. pull the SHA-tagged image
+5. replace the running container
+6. call `/health` on the instance
+
+The deployed container uses:
+- container name: `ai-content-backend`
+- host port: `8000`
+- env file: `/opt/ai-content-detection/.env`
+
+If you want a different image name, container name, or port, update `.github/workflows/deploy.yml`.
 - confirm the build completed successfully
 - confirm the service is Docker-based, not a plain Python web service
 
