@@ -4,14 +4,27 @@ Helpers for loading Hugging Face models strictly from the local cache when confi
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from app.config import settings
 
 
+def _resolved_hf_cache_dir() -> str:
+    """
+    Resolve the actual Hugging Face hub cache directory from HF_HOME.
+
+    Hugging Face libraries treat HF_HOME as a base directory and store model repos
+    under an additional `hub/` subdirectory. In this project HF_HOME is intentionally
+    left as `/opt/huggingface/hub`, so the real cached model path becomes
+    `/opt/huggingface/hub/hub`.
+    """
+    return str(Path(settings.HF_HOME) / "hub")
+
+
 def _hf_common_kwargs() -> Dict[str, Any]:
     return {
-        "cache_dir": settings.HF_HOME,
+        "cache_dir": _resolved_hf_cache_dir(),
         "local_files_only": settings.HF_LOCAL_FILES_ONLY,
     }
 
@@ -19,7 +32,7 @@ def _hf_common_kwargs() -> Dict[str, Any]:
 def _cache_only_error(model_name: str, exc: Exception) -> RuntimeError:
     error = RuntimeError(
         f"Model '{model_name}' is not available in the local Hugging Face cache at "
-        f"'{settings.HF_HOME}'. Pre-download it during build or run scripts/download_models.py "
+        f"'{_resolved_hf_cache_dir()}'. Pre-download it during build or run scripts/download_models.py "
         f"with HF_HOME pointed at the same cache directory. Original error: {exc}"
     )
     error.__cause__ = exc
