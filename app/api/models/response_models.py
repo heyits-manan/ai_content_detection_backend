@@ -1,4 +1,4 @@
-from typing import List, Optional, Any, Dict
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict
 
 class PerModelResult(BaseModel):
@@ -98,6 +98,20 @@ class VideoDetectionResponse(BaseModel):
     aggregation: str
     num_frames_used: int
     processing_time_ms: Optional[float] = None
+
+
+class VideoJobAcceptedResponse(BaseModel):
+    success: bool
+    job_id: str
+    status: Literal["queued"]
+
+
+class VideoJobStatusResponse(BaseModel):
+    success: bool
+    job_id: str
+    status: Literal["queued", "processing", "completed", "failed"]
+    result: Optional[VideoDetectionResponse] = None
+    error: Optional[str] = None
 
 
 class AudioChunkResult(BaseModel):

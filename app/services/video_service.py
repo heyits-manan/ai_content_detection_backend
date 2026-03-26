@@ -24,7 +24,6 @@ from app.core.exceptions import (
 )
 from app.core.file_handler import remove_file_if_exists, resolve_upload_suffix, save_upload_to_temp
 from app.models.image.base import clamp01
-from app.services.image_service import ensure_image_ensemble_loaded, run_image_ensemble
 
 logger = logging.getLogger(__name__)
 
@@ -174,11 +173,23 @@ def _run_frame_inference(frame_index: int, frame: np.ndarray, inference_fn: Fram
     return {"frame_index": frame_index, "probability": probability}
 
 
+def _run_image_ensemble_inference(frame: np.ndarray) -> float:
+    from app.services.image_service import run_image_ensemble
+
+    return float(run_image_ensemble(frame))
+
+
+def _ensure_image_ensemble_loaded() -> None:
+    from app.services.image_service import ensure_image_ensemble_loaded
+
+    ensure_image_ensemble_loaded()
+
+
 def process_frames_parallel(
     frames: Sequence[FrameSample],
     max_workers: int,
     inference_timeout_seconds: float,
-    inference_fn: FrameInferenceFn = run_image_ensemble,
+    inference_fn: FrameInferenceFn = _run_image_ensemble_inference,
 ) -> List[Dict[str, float | int]]:
     """
     Run frame inference concurrently and return sorted successful results.
@@ -313,7 +324,7 @@ class VideoDetectionService:
         overall_started_at = time.perf_counter()
 
         warmup_started_at = time.perf_counter()
-        ensure_image_ensemble_loaded()
+        _ensure_image_ensemble_loaded()
         logger.info(
             "Image ensemble warmup completed in %.2f ms before video frame inference",
             (time.perf_counter() - warmup_started_at) * 1000.0,

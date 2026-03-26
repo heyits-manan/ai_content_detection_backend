@@ -3,6 +3,7 @@ import os
 from pydantic_settings import BaseSettings
 from typing import Dict, List
 
+
 class Settings(BaseSettings):
     # API Settings
     API_V1_STR: str = "/api/v1"
@@ -85,6 +86,13 @@ class Settings(BaseSettings):
     VIDEO_DEFAULT_NUM_FRAMES: int = 16
     VIDEO_MAX_WORKERS: int = max(1, min(4, os.cpu_count() or 1))
     VIDEO_INFERENCE_TIMEOUT_SECONDS: float = 180.0
+    VIDEO_JOB_TIMEOUT_SECONDS: int = 600
+    VIDEO_QUEUE_NAME: str = "video-detection"
+    JOB_RESULT_TTL_SECONDS: int = 3600
+    JOB_STATUS_RATE_LIMIT: str = "60/minute"
+    REDIS_URL: str = "redis://localhost:6379/0"
+    ENABLE_REAL_INFERENCE: bool = False
+    MOCK_VIDEO_PROCESSING_SECONDS: float = 1.5
     VIDEO_DETECT_RATE_LIMIT: str = "5/minute"
     VIDEO_HEALTH_RATE_LIMIT: str = "60/minute"
     AUDIO_MODEL: str = "garystafford/wav2vec2-deepfake-voice-detector"
