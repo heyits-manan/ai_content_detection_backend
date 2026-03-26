@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY app app
 COPY scripts scripts
-RUN python scripts/download_models.py
+RUN python3 scripts/download_models.py
 
 ENV HF_LOCAL_FILES_ONLY=true \
     HF_HUB_OFFLINE=1 \
@@ -36,4 +36,4 @@ ENV HF_LOCAL_FILES_ONLY=true \
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python3 -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
