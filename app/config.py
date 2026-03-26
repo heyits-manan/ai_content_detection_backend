@@ -91,6 +91,7 @@ class Settings(BaseSettings):
     JOB_RESULT_TTL_SECONDS: int = 3600
     JOB_STATUS_RATE_LIMIT: str = "60/minute"
     REDIS_URL: str = "redis://localhost:6379/0"
+    RQ_WORKER_CLASS: str = "simple"
     ENABLE_REAL_INFERENCE: bool = False
     MOCK_VIDEO_PROCESSING_SECONDS: float = 1.5
     VIDEO_DETECT_RATE_LIMIT: str = "5/minute"
